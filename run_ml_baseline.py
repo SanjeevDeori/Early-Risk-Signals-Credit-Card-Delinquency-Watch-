@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 from simulate import simulate_customers
 from signal_model import compute_customer_signals
 from ml_models import prepare_ml_dataset, train_random_forest, try_train_xgboost
+from backtest import compute_backtest_metrics
+import json
 
 
 def ensure_dir(path):
@@ -61,6 +63,37 @@ def main():
         if xgb_res.get('feature_importances'):
             plot_feature_importance(xgb_res['feature_importances'], 'artifacts/feature_importance_xgb.png')
             print('Saved XGB feature importance to artifacts/feature_importance_xgb.png')
+
+    # Compute rule-based metrics using backtest harness and save a comparison JSON
+    try:
+        print('Computing rule-based backtest metrics...')
+        rule_metrics = compute_backtest_metrics(full)
+        # Extract scalar-friendly items
+        def scalarize(m):
+            out = {}
+            for k, v in m.items():
+                if isinstance(v, (float, int)):
+                    out[k] = v
+                elif isinstance(v, (list, tuple)):
+                    out[k] = v
+                else:
+                    try:
+                        out[k] = float(v)
+                    except Exception:
+                        out[k] = str(type(v))
+            return out
+
+        comparison = {
+            'rule_based': scalarize(rule_metrics),
+            'random_forest': rf_res['metrics'],
+            'xgboost': xgb_res['metrics'] if xgb_res is not None else None,
+        }
+
+        with open('artifacts/ml_comparison.json', 'w') as fh:
+            json.dump(comparison, fh, indent=2)
+        print('Saved ML comparison to artifacts/ml_comparison.json')
+    except Exception as e:
+        print('Could not compute rule-based metrics:', e)
 
 
 if __name__ == '__main__':

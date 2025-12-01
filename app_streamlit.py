@@ -17,11 +17,14 @@ import altair as alt
 import io
 import requests
 from matplotlib.backends.backend_pdf import PdfPages
+import os
+import json
 
 from simulate import simulate_customers
 from signal_model import compute_customer_signals, DEFAULT_WEIGHTS
 from backtest import inject_outcomes, compute_backtest_metrics
 from data_loader import load_real_data, compute_real_data_signals
+from ml_models import prepare_ml_dataset, train_random_forest, try_train_xgboost
 
 
 @st.cache_data
@@ -76,7 +79,7 @@ def main():
                 st.write('Click to simulate a quick preview cohort')
             st.markdown('</div>', unsafe_allow_html=True)
 
-    tab_real, tab1, tab2, tab3, tab_drilldown = st.tabs(['Real Data', 'Explore', 'Calibrate', 'Backtest', 'Drilldown'])
+    tab_real, tab1, tab2, tab3, tab_ml, tab_drilldown = st.tabs(['Real Data', 'Explore', 'Calibrate', 'Backtest', 'ML', 'Drilldown'])
 
     # ===== TAB 0: REAL DATA =====
     with tab_real:
@@ -418,6 +421,69 @@ def main():
             - **F1 Score @ 50**: {metrics['f1_at_50']:.3f}
             """)
 
+    # ===== TAB X: ML Baseline =====
+    with tab_ml:
+        st.subheader('ML Baseline: RandomForest vs Rule-based')
+        st.write('Train a Random Forest baseline on a simulated cohort and compare against the rule-based signals.')
+
+        ml_sim_n = st.number_input('Cohort size for ML baseline', min_value=200, max_value=5000, value=2000)
+        if st.button('Run ML Baseline', key='ml_run'):
+            with st.spinner('Training Random Forest...'):
+                df_ml = simulate_customers(ml_sim_n, months=6, seed=123)
+                scores_ml = compute_customer_signals(df_ml)
+
+                X, y, full = prepare_ml_dataset(scores_ml, delinquency_rate=0.05, signal_strength=0.7, seed=42)
+                try:
+                    rf_res = train_random_forest(X, y)
+                except Exception as e:
+                    st.error(f'Error training RandomForest: {e}')
+                    rf_res = None
+
+                xgb_res = try_train_xgboost(X, y)
+
+                # Compute rule-based metrics
+                try:
+                    rule_metrics = compute_backtest_metrics(full)
+                except Exception as e:
+                    st.error(f'Error computing rule-based metrics: {e}')
+                    rule_metrics = None
+
+                # Compose comparison
+                comparison = {'rule_based': None, 'random_forest': None, 'xgboost': None}
+                if rule_metrics is not None:
+                    comparison['rule_based'] = {k: (v.tolist() if hasattr(v, 'tolist') else v) for k, v in rule_metrics.items()}
+                if rf_res is not None:
+                    comparison['random_forest'] = rf_res['metrics']
+                if xgb_res is not None:
+                    comparison['xgboost'] = xgb_res['metrics']
+
+                # Save comparison
+                os.makedirs('artifacts', exist_ok=True)
+                with open('artifacts/ml_comparison.json', 'w') as fh:
+                    json.dump(comparison, fh, indent=2)
+
+                st.success('ML baseline run complete — comparison saved to artifacts/ml_comparison.json')
+
+                # Display summary metrics
+                cols = st.columns(3)
+                if rule_metrics is not None:
+                    cols[0].metric('Rule-based ROC-AUC', f"{rule_metrics.get('roc_auc', 0):.3f}")
+                if rf_res is not None:
+                    cols[1].metric('RF ROC-AUC', f"{rf_res['metrics']['roc_auc']:.3f}")
+                if xgb_res is not None:
+                    cols[2].metric('XGB ROC-AUC', f"{xgb_res['metrics']['roc_auc']:.3f}")
+
+                # Show RF feature importance image if available
+                rf_img = 'artifacts/feature_importance_rf.png'
+                xgb_img = 'artifacts/feature_importance_xgb.png'
+                if os.path.exists(rf_img):
+                    st.image(rf_img, caption='RF Feature Importance', use_column_width=True)
+                if os.path.exists(xgb_img):
+                    st.image(xgb_img, caption='XGBoost Feature Importance', use_column_width=True)
+
+                with open('artifacts/ml_comparison.json', 'rb') as fh:
+                    st.download_button('Download ML comparison JSON', fh.read(), file_name='ml_comparison.json', mime='application/json')
+
     # ===== TAB 4: DRILLDOWN =====
     with tab_drilldown:
         st.subheader('Customer Drill-down & Filters')
@@ -579,3 +645,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

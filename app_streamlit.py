@@ -13,6 +13,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import altair as alt
 import io
 import requests
 from matplotlib.backends.backend_pdf import PdfPages
@@ -131,57 +132,56 @@ def main():
                 with col_left:
                     st.subheader('Tier Distribution')
                     order = ['INTERVENE', 'ENGAGE', 'MONITOR']
-                    counts = scores['tier'].value_counts().reindex(order).fillna(0)
-                    fig, ax = plt.subplots(figsize=(6, 4))
-                    counts.plot(kind='barh', color=['#d7191c', '#fdae61', '#1a9641'], ax=ax)
-                    ax.set_xlabel('Count')
-                    st.pyplot(fig)
-                
+                    counts = scores['tier'].value_counts().reindex(order).fillna(0).reset_index()
+                    counts.columns = ['tier', 'count']
+                    chart = alt.Chart(counts).mark_bar().encode(
+                        y=alt.Y('tier:N', sort=order, title='Tier'),
+                        x=alt.X('count:Q', title='Count'),
+                        color=alt.Color('tier:N', scale=alt.Scale(domain=order, range=['#d7191c', '#fdae61', '#1a9641'])),
+                        tooltip=['tier:N', 'count:Q']
+                    ).properties(width=450, height=200)
+                    st.altair_chart(chart, use_container_width=True)
+
                 with col_right:
                     st.subheader('Score Distribution')
-                    fig, ax = plt.subplots(figsize=(6, 4))
-                    ax.hist(scores['composite_score'], bins=25, color='#2b8cbe', edgecolor='black')
-                    ax.set_xlabel('Composite Score')
-                    ax.set_ylabel('Count')
-                    ax.axvline(50, color='orange', linestyle='--', label='ENGAGE threshold')
-                    ax.axvline(76, color='red', linestyle='--', label='INTERVENE threshold')
-                    ax.legend()
-                    ax.grid(alpha=0.2)
-                    st.pyplot(fig)
+                    hist = alt.Chart(scores).mark_bar().encode(
+                        alt.X('composite_score:Q', bin=alt.Bin(maxbins=30), title='Composite Score'),
+                        y='count():Q',
+                        tooltip=[alt.Tooltip('count():Q', title='Count')]
+                    ).properties(width=450, height=200)
+                    vlines = alt.Chart(pd.DataFrame({'x':[50,76],'label':['ENGAGE','INTERVENE']})).mark_rule(strokeDash=[4,4]).encode(x='x:Q', color=alt.Color('label:N', scale=alt.Scale(domain=['ENGAGE','INTERVENE'], range=['orange','red'])))
+                    st.altair_chart((hist + vlines).interactive(), use_container_width=True)
                 
                 # Signal relationships
                 st.subheader('Signal Relationships')
                 col1, col2, col3 = st.columns(3)
                 
                 with col1:
-                    fig, ax = plt.subplots(figsize=(5, 4))
-                    scatter = ax.scatter(scores['utilization'], scores['composite_score'],
-                                       c=scores['composite_score'], cmap='viridis', alpha=0.6, s=40)
-                    ax.set_xlabel('Utilization %')
-                    ax.set_ylabel('Composite Score')
-                    ax.set_title('Utilization vs Score')
-                    plt.colorbar(scatter, ax=ax)
-                    st.pyplot(fig)
+                    chart = alt.Chart(scores).mark_circle(size=60).encode(
+                        x=alt.X('utilization:Q', title='Utilization'),
+                        y=alt.Y('composite_score:Q', title='Composite Score'),
+                        color=alt.Color('composite_score:Q', scale=alt.Scale(scheme='viridis')),
+                        tooltip=['customer_id', alt.Tooltip('composite_score:Q', format='.2f'), alt.Tooltip('utilization:Q', format='.2f')]
+                    ).properties(width=300, height=240).interactive()
+                    st.altair_chart(chart, use_container_width=True)
                 
                 with col2:
-                    fig, ax = plt.subplots(figsize=(5, 4))
-                    scatter = ax.scatter(scores['avg_payment_ratio'], scores['composite_score'],
-                                       c=scores['composite_score'], cmap='viridis', alpha=0.6, s=40)
-                    ax.set_xlabel('Avg Payment Ratio %')
-                    ax.set_ylabel('Composite Score')
-                    ax.set_title('Payment Ratio vs Score')
-                    plt.colorbar(scatter, ax=ax)
-                    st.pyplot(fig)
+                    chart = alt.Chart(scores).mark_circle(size=60).encode(
+                        x=alt.X('avg_payment_ratio:Q', title='Avg Payment Ratio'),
+                        y=alt.Y('composite_score:Q', title='Composite Score'),
+                        color=alt.Color('composite_score:Q', scale=alt.Scale(scheme='viridis')),
+                        tooltip=['customer_id', alt.Tooltip('composite_score:Q', format='.2f'), alt.Tooltip('avg_payment_ratio:Q', format='.2f')]
+                    ).properties(width=300, height=240).interactive()
+                    st.altair_chart(chart, use_container_width=True)
                 
                 with col3:
-                    fig, ax = plt.subplots(figsize=(5, 4))
-                    scatter = ax.scatter(scores['cash_withdrawal_pct'], scores['composite_score'],
-                                       c=scores['composite_score'], cmap='viridis', alpha=0.6, s=40)
-                    ax.set_xlabel('Cash Withdrawal %')
-                    ax.set_ylabel('Composite Score')
-                    ax.set_title('Cash Withdrawal vs Score')
-                    plt.colorbar(scatter, ax=ax)
-                    st.pyplot(fig)
+                    chart = alt.Chart(scores).mark_circle(size=60).encode(
+                        x=alt.X('cash_withdrawal_pct:Q', title='Cash Withdrawal %'),
+                        y=alt.Y('composite_score:Q', title='Composite Score'),
+                        color=alt.Color('composite_score:Q', scale=alt.Scale(scheme='viridis')),
+                        tooltip=['customer_id', alt.Tooltip('composite_score:Q', format='.2f'), alt.Tooltip('cash_withdrawal_pct:Q', format='.2f')]
+                    ).properties(width=300, height=240).interactive()
+                    st.altair_chart(chart, use_container_width=True)
                 
                 # High-risk cohorts
                 st.subheader('High-Risk Flagged Accounts')

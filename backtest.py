@@ -5,7 +5,13 @@ then computes validation metrics like precision, recall, lead time, and ROC.
 """
 import numpy as np
 import pandas as pd
-from sklearn.metrics import precision_recall_curve, roc_curve, auc, confusion_matrix
+
+# sklearn is optional at import time. Provide a clear error if missing when metrics are requested.
+try:
+    from sklearn.metrics import precision_recall_curve, roc_curve, auc, confusion_matrix
+    _SKLEARN_AVAILABLE = True
+except Exception:
+    _SKLEARN_AVAILABLE = False
 
 
 def inject_outcomes(scores_df, delinquency_rate=0.05, signal_strength=0.7, seed=42):
@@ -53,6 +59,18 @@ def compute_backtest_metrics(outcomes_df, score_column='composite_score'):
     """
     y_true = outcomes_df['became_delinquent']
     y_score = outcomes_df[score_column]
+
+    # Precision-recall and ROC computations require scikit-learn
+    if not _SKLEARN_AVAILABLE:
+        raise ImportError(
+            "scikit-learn is required to compute backtest metrics.\n"
+            "Install it in the Python environment you use to run Streamlit, for example:\n"
+            "  pip install scikit-learn\n"
+            "Or if you use a virtualenv:\n"
+            "  ./.venv/Scripts/Activate.ps1    # (PowerShell) then pip install scikit-learn\n"
+            "Or run Streamlit with the venv python:\n"
+            "  & \"./.venv/Scripts/python.exe\" -m streamlit run app_streamlit.py\n"
+        )
 
     # Precision-recall curve
     precision, recall, pr_thresholds = precision_recall_curve(y_true, y_score)

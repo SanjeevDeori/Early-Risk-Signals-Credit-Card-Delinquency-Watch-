@@ -131,6 +131,36 @@ Five behavioral analysis categories:
 
 ---
 
+## 🔬 ML Baseline & Reproducibility
+
+This project includes an ML baseline and comparison utilities to evaluate tree-based models against the rule-based signal:
+
+- `ml_models.py` — dataset preparation and training helpers (RandomForest; optional XGBoost).
+- `run_ml_baseline.py` — runnable experiment: simulates a cohort, injects outcomes, trains RF and XGBoost (if installed), and writes artifacts to `artifacts/`.
+- `artifacts/ml_comparison.json` — side-by-side metrics for rule-based vs RF vs XGBoost.
+- `artifacts/feature_importance_rf.png` and `artifacts/feature_importance_xgb.png` — feature importance visualizations.
+
+To reproduce the ML baseline locally (recommended to use the project's venv):
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+# (optional) install extra ML libs for XGBoost/LightGBM
+pip install xgboost lightgbm
+python run_ml_baseline.py
+```
+
+The Streamlit `ML` tab also reads `artifacts/ml_comparison.json` (if present) and displays the latest comparison and feature-importance images.
+
+Note: For sequence-model experiments the `sequence_modeling.py` scaffold is included; install `tensorflow` only if you intend to run those notebooks/experiments.
+
+## 📦 Artifacts to Include for Capstone Submission
+
+- `artifacts/ml_comparison.json` — ML vs rule-based metrics
+- `artifacts/feature_importance_rf.png`, `artifacts/feature_importance_xgb.png` — importance plots
+- Example outputs from `app_streamlit.py` (screenshots or exported PDF reports in `artifacts/`)
+
+
 ## 💡 Business Impact
 
 - **Risk Reduction:** 25%+ drop in delinquency roll rates w/ early intervention

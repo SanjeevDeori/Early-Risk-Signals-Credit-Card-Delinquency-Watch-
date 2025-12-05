@@ -6,3 +6,7 @@ pyarrow==21.0.0
 scikit-learn==1.7.2
 scipy==1.16.3
 streamlit==1.51.0
+xgboost==3.1.2
+lightgbm==4.6.0
+# Optional (sequence models): install only if running TF experiments
+# tensorflow==2.14.0

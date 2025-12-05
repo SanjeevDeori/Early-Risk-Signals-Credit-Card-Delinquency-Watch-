@@ -427,6 +427,29 @@ def main():
         st.write('Train a Random Forest baseline on a simulated cohort and compare against the rule-based signals.')
 
         ml_sim_n = st.number_input('Cohort size for ML baseline', min_value=200, max_value=5000, value=2000)
+
+        # If a previous run exists, show it immediately for quick inspection
+        comp_path = 'artifacts/ml_comparison.json'
+        rf_img = 'artifacts/feature_importance_rf.png'
+        xgb_img = 'artifacts/feature_importance_xgb.png'
+        if os.path.exists(comp_path):
+            try:
+                with open(comp_path, 'r') as fh:
+                    comp = json.load(fh)
+                st.markdown('**Latest ML vs Rule-based Comparison (from artifacts/ml_comparison.json)**')
+                cols = st.columns(3)
+                if comp.get('rule_based') is not None:
+                    cols[0].metric('Rule ROC-AUC', f"{comp['rule_based'].get('roc_auc', 0):.3f}")
+                if comp.get('random_forest') is not None:
+                    cols[1].metric('RF ROC-AUC', f"{comp['random_forest'].get('roc_auc', 0):.3f}")
+                if comp.get('xgboost') is not None:
+                    cols[2].metric('XGB ROC-AUC', f"{comp['xgboost'].get('roc_auc', 0):.3f}")
+
+                st.write('Full comparison JSON:')
+                st.json(comp)
+            except Exception as e:
+                st.error(f'Error reading comparison JSON: {e}')
+
         if st.button('Run ML Baseline', key='ml_run'):
             with st.spinner('Training Random Forest...'):
                 df_ml = simulate_customers(ml_sim_n, months=6, seed=123)

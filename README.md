@@ -5,6 +5,10 @@
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red.svg)](https://streamlit.io)
 
+**🚀 [Live Demo](https://sanjeevdeori-early-risk-signals-credit-car-app-streamlit-ffd6et.streamlit.app/)** | 
+[Documentation](CAPSTONE_SUBMISSION.md) | 
+[Quickstart](QUICKSTART_REAL_DATA.md)
+
 A lightweight, data-driven prototype that surfaces early behavioral risk signals to prevent credit card delinquency through proactive intervention.
 
 ---
@@ -273,7 +277,18 @@ Configurable weights, thresholds, and tiers adapt to different risk appetites an
 
 ## 🚀 Getting Started
 
-### Quick Demo (5 minutes)
+### Option 1: Try the Live Demo (No Installation Required) ⭐
+
+**[🌐 Launch Live Application](https://sanjeevdeori-early-risk-signals-credit-car-app-streamlit-ffd6et.streamlit.app/)**
+
+Experience the full application in your browser:
+- Upload your own credit card dataset
+- Explore interactive risk dashboards
+- Calibrate scoring thresholds in real-time
+- Run backtest validations
+- Generate PDF reports
+
+### Option 2: Run Locally (5 minutes)
 
 1. **Clone and install:**
 ```bash
@@ -296,9 +311,6 @@ streamlit run app_streamlit.py
    - **Calibrate Tab:** Adjust weights and thresholds interactively
    - **Backtest Tab:** Validate with synthetic outcomes
    - **Drilldown Tab:** Filter and export high-risk customers
-
----
-
 ## 📸 Screenshots & Demo
 
 ### Real Data Analysis Dashboard
@@ -584,5 +596,6 @@ Contributions are welcome! Please follow these guidelines:
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
+
 
 

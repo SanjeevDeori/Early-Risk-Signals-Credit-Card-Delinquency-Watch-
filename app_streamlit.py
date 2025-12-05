@@ -92,10 +92,25 @@ def main():
             uploaded_file = st.file_uploader('Upload CSV', type=['csv', 'txt'])
         with col2:
             use_default = st.checkbox('Use default dataset (credit_card_data.csv)', value=True)
-        
+
         filepath = None
+        # Prefer repository copy of credit_card_data.csv; fall back to bundled sample
         if use_default:
-            filepath = 'credit_card_data.csv'
+            if os.path.exists('credit_card_data.csv'):
+                filepath = 'credit_card_data.csv'
+            elif os.path.exists('data/sample_credit_card_data.csv'):
+                filepath = 'data/sample_credit_card_data.csv'
+                st.warning('Default `credit_card_data.csv` not found — using bundled example dataset.')
+            else:
+                filepath = None
+                st.warning('No default dataset found. Please upload a CSV or download the example.')
+                # Offer the sample for download even if not present locally
+                try:
+                    with open('data/sample_credit_card_data.csv', 'rb') as fh:
+                        sample_bytes = fh.read()
+                    st.download_button('Download example CSV', data=sample_bytes, file_name='sample_credit_card_data.csv', mime='text/tab-separated-values')
+                except Exception:
+                    st.info('Example CSV not bundled; please upload your dataset.')
         elif uploaded_file:
             filepath = uploaded_file
         
